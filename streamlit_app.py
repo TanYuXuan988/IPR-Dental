@@ -2,36 +2,32 @@ import streamlit as st
 from PIL import Image
 import datetime
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 
 # -----------------------
-# Configuration
+# App Configuration
 # -----------------------
 st.set_page_config(page_title="Dental Report", layout="centered")
 
+# Initialize session state
+if "page" not in st.session_state:
+    st.session_state.page = "login"
+    st.session_state.authenticated = False
+
+# -----------------------
 # Google Sheets Setup
+# -----------------------
 def init_gsheets():
     try:
-        scope = ['https://spreadsheets.google.com/feeds',
-                'https://www.googleapis.com/auth/drive']
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(
-            st.secrets["gcp_service_account"], scope)
-        gc = gspread.authorize(creds)
+        # Using direct API key authentication
+        gc = gspread.Client(auth={'api_key': st.secrets["gsheets_api_key"]})
         return gc
     except Exception as e:
         st.error(f"Google Sheets connection failed: {str(e)}")
         return None
 
 # -----------------------
-# Session State
-# -----------------------
-if "page" not in st.session_state:
-    st.session_state.page = "login"
-    st.session_state.authenticated = False
-
-# -----------------------
-# Helper Functions
+# Authentication Functions
 # -----------------------
 def verify_login(username, password):
     gc = init_gsheets()
@@ -62,21 +58,6 @@ def log_login(username, success):
         except Exception as e:
             st.error(f"Failed to log login attempt: {str(e)}")
 
-def change_password(username, old_pwd, new_pwd):
-    gc = init_gsheets()
-    if gc:
-        try:
-            sheet = gc.open("IPR Login Logsheet").worksheet("Credentials")
-            records = sheet.get_all_records()
-            for i, record in enumerate(records, start=2):  # start=2 because of header row
-                if record['Username'] == username and record['Password'] == old_pwd:
-                    sheet.update_cell(i, 2, new_pwd)  # Column 2 is Password
-                    return True
-            return False
-        except Exception as e:
-            st.error(f"Password change failed: {str(e)}")
-            return False
-
 # -----------------------
 # Page 1: Login
 # -----------------------
@@ -105,15 +86,6 @@ elif st.session_state.page == "input" and st.session_state.authenticated:
     if st.sidebar.button("Logout"):
         st.session_state.authenticated = False
         st.session_state.page = "login"
-    
-    with st.sidebar.expander("Change Password"):
-        old_pwd = st.text_input("Old Password", type="password", key="old_pwd")
-        new_pwd = st.text_input("New Password", type="password", key="new_pwd")
-        if st.button("Update Password"):
-            if change_password(st.session_state.username, old_pwd, new_pwd):
-                st.success("Password changed successfully ✅")
-            else:
-                st.error("Failed to change password ❌")
     
     st.header("👤 Patient Information")
     name = st.text_input("Name", key="name")
