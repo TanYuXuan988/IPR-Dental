@@ -10,57 +10,57 @@ if 'page' not in st.session_state:
     st.session_state.page = "login"
     st.session_state.authenticated = False
     st.session_state.username = ""
-    st.session_state.patient_data = {
-        "name": "",
-        "age": 0,
-        "sex": "",
-        "date": datetime.date.today(),
-        "xray": None
-    }
+    st.session_state.name = ""
+    st.session_state.age = 0
+    st.session_state.sex = ""
+    st.session_state.date = datetime.date.today()
+    st.session_state.xray = None
 
-# Default credentials
+# Default credentials (fallback)
 DEFAULT_CREDENTIALS = {"UserIPR": "AdminIPR"}
 
 # -----------------------
-# Google Sheets Access
+# Google Sheets API Setup
 # -----------------------
-def get_sheet(sheet_name):
+def init_gsheets():
     try:
-        # Direct access to public sheet
-        gc = gspread.oauth()  # Will prompt for Google login
-        return gc.open("IPR Login Logsheet").worksheet(sheet_name)
+        # Method 1: Public sheet access
+        gc = gspread.Client(auth={'api_key': st.secrets["gsheets_api_key"]})
+        return gc
     except Exception as e:
-        st.error(f"Couldn't access sheet: {e}")
+        st.error(f"Google Sheets connection failed: {e}")
         return None
 
 # -----------------------
 # Authentication
 # -----------------------
 def verify_login(username, password):
-    # 1. Try default credentials first
-    if username in DEFAULT_CREDENTIALS and DEFAULT_CREDENTIALS[username] == password:
-        log_login(username, True)
-        return True
-    
-    # 2. Try Google Sheets
-    sheet = get_sheet("Credentials")
-    if sheet:
+    # Try Google Sheets first
+    gc = init_gsheets()
+    if gc:
         try:
+            sheet = gc.open("IPR Login Logsheet").worksheet("Credentials")
             records = sheet.get_all_records()
             for record in records:
                 if record['Username'] == username and record['Password'] == password:
                     log_login(username, True)
                     return True
-        except:
-            pass
+        except Exception as e:
+            st.error(f"Sheet access error: {e}")
+    
+    # Fallback to default credentials
+    if username in DEFAULT_CREDENTIALS and DEFAULT_CREDENTIALS[username] == password:
+        log_login(username, True)
+        return True
     
     log_login(username, False)
     return False
 
 def log_login(username, success):
-    sheet = get_sheet("Login Logs")
-    if sheet:
+    gc = init_gsheets()
+    if gc:
         try:
+            sheet = gc.open("IPR Login Logsheet").worksheet("Login Logs")
             sheet.append_row([
                 datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 username,
@@ -68,9 +68,6 @@ def log_login(username, success):
             ])
         except:
             pass
-
-# [Rest of your code remains exactly the same as previous example]
-# Include all your page definitions (login/input/summary) here
 
 # -----------------------
 # Page 1: Login
