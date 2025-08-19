@@ -1,7 +1,6 @@
 import streamlit as st
 import datetime
 import gspread
-from gspread_pandas import Spread, Client
 import pandas as pd
 
 # -----------------------
@@ -12,7 +11,7 @@ if 'page' not in st.session_state:
     st.session_state.authenticated = False
     st.session_state.username = ""
     st.session_state.patient_data = {
-        "name": "",
+        "name": "", 
         "age": 0,
         "sex": "",
         "date": datetime.date.today(),
@@ -37,7 +36,7 @@ def get_sheet(sheet_name):
 # Authentication
 # -----------------------
 def verify_login(username, password):
-    # 1. Try default credentials first
+    # 1. Try default credentials
     if username in DEFAULT_CREDENTIALS and DEFAULT_CREDENTIALS[username] == password:
         return True
         
@@ -62,8 +61,8 @@ def log_login(username, success):
             ])
         except:
             pass
-            
-# ----------------------- 
+
+# -----------------------
 # Page 1: Login
 # -----------------------
 if st.session_state.page == "login":
