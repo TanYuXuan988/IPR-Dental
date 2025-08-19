@@ -2,6 +2,7 @@ import streamlit as st
 import datetime
 import gspread
 import pandas as pd
+from oauth2client.service_account import ServiceAccountCredentials
 
 # -----------------------
 # Initialize Session State
@@ -24,40 +25,60 @@ DEFAULT_CREDENTIALS = {"UserIPR": "AdminIPR"}
 # -----------------------
 # Google Sheets Access
 # -----------------------
-def get_sheet(sheet_name):
+def init_gsheets():
     try:
-        # Method 1: Public sheet access (no auth needed)
-        gc = gspread.Client(auth={'api_key': st.secrets["public_api_key"]})
-        return gc.open("IPR Login Logsheet").worksheet(sheet_name)
-    except:
+        scope = ['https://spreadsheets.google.com/feeds',
+                'https://www.googleapis.com/auth/drive']
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(
+            st.secrets["gsheets_credentials"], scope)
+        gc = gspread.authorize(creds)
+        return gc
+    except Exception as e:
+        st.error(f"Google Sheets connection failed: {str(e)}")
         return None
 
 # -----------------------
 # Authentication
 # -----------------------
 def verify_login(username, password):
-    # 1. Always check default credentials first
+    # 1. First try Google Sheets credentials
+    gc = init_gsheets()
+    if gc:
+        try:
+            sheet = gc.open("IPR Login Logsheet").worksheet("Credentials")
+            records = sheet.get_all_records()
+            
+            # Debug: Show what credentials are being checked
+            st.write("Checking against these records:", records)
+            
+            for record in records:
+                if (str(record.get('Username', '')).strip() == username.strip() and 
+                    str(record.get('Password', '')).strip() == password.strip()):
+                    log_login(username, True)
+                    return True
+        except Exception as e:
+            st.error(f"Error reading credentials: {e}")
+    
+    # 2. Fallback to hardcoded defaults if Sheets fails
     if username == "UserIPR" and password == "AdminIPR":
         log_login(username, True)
         return True
     
-    # 2. Try Google Sheets credentials
-    try:
-        gc = gspread.service_account_from_dict(st.secrets["gsheets_credentials"])
-        sheet = gc.open("IPR Login Logsheet").worksheet("Credentials")
-        records = sheet.get_all_records()
-        
-        # Check each record
-        for record in records:
-            if str(record['Username']).strip() == username.strip() and str(record['Password']).strip() == password.strip():
-                log_login(username, True)
-                return True
-                
-    except Exception as e:
-        st.error(f"Login error: {e}")
-    
     log_login(username, False)
     return False
+
+def log_login(username, success):
+    gc = init_gsheets()
+    if gc:
+        try:
+            sheet = gc.open("IPR Login Logsheet").worksheet("Login Logs")
+            sheet.append_row([
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                username,
+                "Success" if success else "Failed"
+            ])
+        except:
+            pass
     
 # ----------------------- 
 # Page 1: Login
