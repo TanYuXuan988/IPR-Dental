@@ -57,7 +57,9 @@ def verify_login(username, password):
         st.error(f"Login error: {e}")
     
     log_login(username, False)
-    return False-----
+    return False
+    
+# ----------------------- 
 # Page 1: Login
 # -----------------------
 if st.session_state.page == "login":
