@@ -36,32 +36,28 @@ def get_sheet(sheet_name):
 # Authentication
 # -----------------------
 def verify_login(username, password):
-    # 1. Try default credentials
-    if username in DEFAULT_CREDENTIALS and DEFAULT_CREDENTIALS[username] == password:
+    # 1. Always check default credentials first
+    if username == "UserIPR" and password == "AdminIPR":
+        log_login(username, True)
         return True
+    
+    # 2. Try Google Sheets credentials
+    try:
+        gc = gspread.service_account_from_dict(st.secrets["gsheets_credentials"])
+        sheet = gc.open("IPR Login Logsheet").worksheet("Credentials")
+        records = sheet.get_all_records()
         
-    # 2. Try Google Sheets
-    sheet = get_sheet("Credentials")
-    if sheet:
-        try:
-            records = sheet.get_all_records()
-            return any(r['Username'] == username and r['Password'] == password for r in records)
-        except:
-            pass
-    return False
-
-def log_login(username, success):
-    sheet = get_sheet("Login Logs")
-    if sheet:
-        try:
-            sheet.append_row([
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
-                username,
-                "Success" if success else "Failed"
-            ])
-        except:
-            pass
-# -----------------------
+        # Check each record
+        for record in records:
+            if str(record['Username']).strip() == username.strip() and str(record['Password']).strip() == password.strip():
+                log_login(username, True)
+                return True
+                
+    except Exception as e:
+        st.error(f"Login error: {e}")
+    
+    log_login(username, False)
+    return False-----
 # Page 1: Login
 # -----------------------
 if st.session_state.page == "login":
