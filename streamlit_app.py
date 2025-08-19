@@ -2,130 +2,150 @@ import streamlit as st
 from PIL import Image
 import datetime
 import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 
 # -----------------------
-# App Configuration
+# Configuration
 # -----------------------
 st.set_page_config(page_title="Dental Report", layout="centered")
 
-# Initialize session state
-if "page" not in st.session_state:
-    st.session_state.page = "login"
-    st.session_state.authenticated = False
-    st.session_state.username = "UserIPR"
-    st.session_state.password = "AdminIPR"
-
-# -----------------------
 # Google Sheets Setup
-# -----------------------
 def init_gsheets():
     try:
-        # Using direct API access (no service account)
-        gc = gspread.oauth()  # Will prompt for authentication
+        scope = ['https://spreadsheets.google.com/feeds',
+                'https://www.googleapis.com/auth/drive']
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(
+            st.secrets["gcp_service_account"], scope)
+        gc = gspread.authorize(creds)
         return gc
     except Exception as e:
         st.error(f"Google Sheets connection failed: {str(e)}")
         return None
 
 # -----------------------
-# Page: Login
+# Session State
+# -----------------------
+if "page" not in st.session_state:
+    st.session_state.page = "login"
+    st.session_state.authenticated = False
+
+# -----------------------
+# Helper Functions
+# -----------------------
+def verify_login(username, password):
+    gc = init_gsheets()
+    if gc:
+        try:
+            sheet = gc.open("IPR Login Logsheet").worksheet("Credentials")
+            records = sheet.get_all_records()
+            for record in records:
+                if record['Username'] == username and record['Password'] == password:
+                    log_login(username, True)
+                    return True
+            log_login(username, False)
+            return False
+        except Exception as e:
+            st.error(f"Login verification failed: {str(e)}")
+            return False
+
+def log_login(username, success):
+    gc = init_gsheets()
+    if gc:
+        try:
+            sheet = gc.open("IPR Login Logsheet").worksheet("Login Logs")
+            sheet.append_row([
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                username,
+                "Success" if success else "Failed"
+            ])
+        except Exception as e:
+            st.error(f"Failed to log login attempt: {str(e)}")
+
+def change_password(username, old_pwd, new_pwd):
+    gc = init_gsheets()
+    if gc:
+        try:
+            sheet = gc.open("IPR Login Logsheet").worksheet("Credentials")
+            records = sheet.get_all_records()
+            for i, record in enumerate(records, start=2):  # start=2 because of header row
+                if record['Username'] == username and record['Password'] == old_pwd:
+                    sheet.update_cell(i, 2, new_pwd)  # Column 2 is Password
+                    return True
+            return False
+        except Exception as e:
+            st.error(f"Password change failed: {str(e)}")
+            return False
+
+# -----------------------
+# Page 1: Login
 # -----------------------
 if st.session_state.page == "login":
-    st.title("🔐 Dental Report Login")
+    st.title("🔐 Login to Dental Report System")
     
-    user = st.text_input("Username")
-    pwd = st.text_input("Password", type="password")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
     
     if st.button("Login"):
-        if user == st.session_state.username and pwd == st.session_state.password:
+        if verify_login(username, password):
             st.session_state.authenticated = True
+            st.session_state.username = username
             st.session_state.page = "input"
-            st.success("Login successful")
+            st.success("Login successful ✅")
         else:
-            st.error("Invalid credentials")
+            st.error("Invalid username or password ❌")
 
 # -----------------------
-# Page: Patient Input
+# Page 2: Patient Input
 # -----------------------
 elif st.session_state.page == "input" and st.session_state.authenticated:
-    st.title("🦷 New Patient Report")
+    st.title("🦷 Dental X-ray Report - Step 1")
     
-    # Sidebar
-    with st.sidebar:
-        st.title("Settings")
-        if st.button("Logout"):
-            st.session_state.authenticated = False
-            st.session_state.page = "login"
-        
-        # Password change
-        with st.expander("Change Password"):
-            old_pwd = st.text_input("Current Password", type="password")
-            new_pwd = st.text_input("New Password", type="password")
-            if st.button("Update"):
-                if old_pwd == st.session_state.password:
-                    st.session_state.password = new_pwd
-                    st.success("Password updated")
-                else:
-                    st.error("Incorrect current password")
+    st.sidebar.title("⚙️ Settings")
+    if st.sidebar.button("Logout"):
+        st.session_state.authenticated = False
+        st.session_state.page = "login"
     
-    # Patient Form
-    with st.form("patient_form"):
-        st.header("Patient Information")
-        name = st.text_input("Full Name")
-        age = st.number_input("Age", min_value=0, max_value=120)
-        sex = st.selectbox("Gender", ["Male", "Female", "Other"])
-        date = st.date_input("Exam Date", value=datetime.date.today())
-        
-        st.header("X-ray Upload")
-        xray = st.file_uploader("Upload bitewing X-ray", type=["jpg", "jpeg", "png"])
-        
-        if st.form_submit_button("Submit Report"):
-            if xray:
-                st.session_state.patient_data = {
-                    "name": name,
-                    "age": age,
-                    "sex": sex,
-                    "date": date,
-                    "xray": xray
-                }
-                st.session_state.page = "summary"
+    with st.sidebar.expander("Change Password"):
+        old_pwd = st.text_input("Old Password", type="password", key="old_pwd")
+        new_pwd = st.text_input("New Password", type="password", key="new_pwd")
+        if st.button("Update Password"):
+            if change_password(st.session_state.username, old_pwd, new_pwd):
+                st.success("Password changed successfully ✅")
             else:
-                st.warning("Please upload an X-ray image")
+                st.error("Failed to change password ❌")
+    
+    st.header("👤 Patient Information")
+    name = st.text_input("Name", key="name")
+    age = st.number_input("Age", min_value=0, max_value=120, key="age")
+    sex = st.selectbox("Gender", ["Male", "Female", "Other"], key="sex")
+    date = st.date_input("Examination Date", key="date", value=datetime.date.today())
+    
+    st.header("📸 Upload Dental X-ray")
+    uploaded_file = st.file_uploader("Upload a bitewing X-ray", type=["jpg", "jpeg", "png"], key="xray")
+    
+    if uploaded_file:
+        st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
+        st.button("Next ➡️", on_click=lambda: st.session_state.update(page="summary"))
 
 # -----------------------
-# Page: Summary
+# Page 3: Summary
 # -----------------------
 elif st.session_state.page == "summary" and st.session_state.authenticated:
-    st.title("📋 Report Summary")
+    st.title("📋 Dental X-ray Report Summary")
     
-    # Display patient data
-    data = st.session_state.patient_data
+    st.sidebar.title("⚙️ Settings")
+    if st.sidebar.button("Logout"):
+        st.session_state.authenticated = False
+        st.session_state.page = "login"
+    
     st.subheader("Patient Details")
-    st.write(f"**Name:** {data['name']}")
-    st.write(f"**Age:** {data['age']}")
-    st.write(f"**Gender:** {data['sex']}")
-    st.write(f"**Exam Date:** {data['date'].strftime('%Y-%m-%d')}")
+    st.write(f"**Name:** {st.session_state.name}")
+    st.write(f"**Age:** {st.session_state.age}")
+    st.write(f"**Gender:** {st.session_state.sex}")
+    st.write(f"**Examination Date:** {st.session_state.date.strftime('%B %d, %Y')}")
     
-    st.subheader("X-ray Preview")
-    st.image(data['xray'], use_column_width=True)
+    st.subheader("Uploaded X-ray Image")
+    st.image(st.session_state.xray, use_column_width=True)
     
-    # Save to Google Sheets
-    if st.button("Save to Google Sheets"):
-        gc = init_gsheets()
-        if gc:
-            try:
-                sheet = gc.open("DentalReports").sheet1
-                sheet.append_row([
-                    data['name'],
-                    data['age'],
-                    data['sex'],
-                    str(data['date']),
-                    "X-ray uploaded"  # Store reference to image
-                ])
-                st.success("Data saved successfully!")
-            except Exception as e:
-                st.error(f"Save failed: {str(e)}")
-    
-    if st.button("New Report"):
-        st.session_state.page = "input"
+    st.button("⬅️ Back", on_click=lambda: st.session_state.update(page="input"))
