@@ -11,14 +11,14 @@ if 'page' not in st.session_state:
     st.session_state.authenticated = False
     st.session_state.username = ""
     st.session_state.patient_data = {
-        "name": "", 
+        "name": "",
         "age": 0,
         "sex": "",
         "date": datetime.date.today(),
         "xray": None
     }
 
-# Default credentials (always works)
+# Default credentials
 DEFAULT_CREDENTIALS = {"UserIPR": "AdminIPR"}
 
 # -----------------------
@@ -26,28 +26,35 @@ DEFAULT_CREDENTIALS = {"UserIPR": "AdminIPR"}
 # -----------------------
 def get_sheet(sheet_name):
     try:
-        # Method 1: Public sheet access (no auth needed)
-        gc = gspread.Client(auth={'api_key': st.secrets["public_api_key"]})
+        # Direct access to public sheet
+        gc = gspread.oauth()  # Will prompt for Google login
         return gc.open("IPR Login Logsheet").worksheet(sheet_name)
-    except:
+    except Exception as e:
+        st.error(f"Couldn't access sheet: {e}")
         return None
 
 # -----------------------
 # Authentication
 # -----------------------
 def verify_login(username, password):
-    # 1. Try default credentials
+    # 1. Try default credentials first
     if username in DEFAULT_CREDENTIALS and DEFAULT_CREDENTIALS[username] == password:
+        log_login(username, True)
         return True
-        
+    
     # 2. Try Google Sheets
     sheet = get_sheet("Credentials")
     if sheet:
         try:
             records = sheet.get_all_records()
-            return any(r['Username'] == username and r['Password'] == password for r in records)
+            for record in records:
+                if record['Username'] == username and record['Password'] == password:
+                    log_login(username, True)
+                    return True
         except:
             pass
+    
+    log_login(username, False)
     return False
 
 def log_login(username, success):
@@ -55,12 +62,15 @@ def log_login(username, success):
     if sheet:
         try:
             sheet.append_row([
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 username,
                 "Success" if success else "Failed"
             ])
         except:
             pass
+
+# [Rest of your code remains exactly the same as previous example]
+# Include all your page definitions (login/input/summary) here
 
 # -----------------------
 # Page 1: Login
