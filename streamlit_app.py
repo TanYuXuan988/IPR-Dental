@@ -1,72 +1,39 @@
 import streamlit as st
 import datetime
-import pandas as pd
 
 # -----------------------
-# Initialize Session State
+# Config
 # -----------------------
-if 'page' not in st.session_state:
-    st.session_state.page = "login"
-    st.session_state.authenticated = False
-    st.session_state.username = ""
-    st.session_state.name = ""
-    st.session_state.age = 0
-    st.session_state.sex = ""
-    st.session_state.date = datetime.date.today()
-    st.session_state.xray = None
-
-# Default credentials (fallback)
 DEFAULT_CREDENTIALS = {"UserIPR": "AdminIPR"}
 
 # -----------------------
-# Google Sheets CSV Setup
+# Session State Setup
 # -----------------------
-SHEET_ID = "16OQxH1SLONgmfCnk7BH_7wq8McEysOthlEo-ybhCvY4"  # Replace with your public sheet ID
-CREDENTIALS_SHEET = "Credentials"
-LOGIN_LOGS_SHEET = "Login Logs"
-
-def load_credentials():
-    """
-    Load username/password from public Google Sheet using CSV export.
-    """
-    try:
-        url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={CREDENTIALS_SHEET}"
-        df = pd.read_csv(url)
-        return df
-    except Exception as e:
-        st.warning(f"Could not load credentials from Google Sheet: {e}")
-        return pd.DataFrame()  # Empty dataframe
-
-def log_login(username, success):
-    """
-    Log login attempt to public sheet (best-effort, cannot append without auth)
-    """
-    st.info(f"Login {'Success' if success else 'Failed'} for user: {username}")
-    # You can optionally append to a local CSV for logs if sheet is public-only
+def init_session_state():
+    defaults = {
+        "page": "login",
+        "authenticated": False,
+        "username": "",
+        "name": "",
+        "age": 0,
+        "sex": "",
+        "date": datetime.date.today(),
+        "xray": None,
+    }
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
 
 # -----------------------
 # Authentication
 # -----------------------
 def verify_login(username, password):
-    df = load_credentials()
-    if not df.empty:
-        matched = df[(df['Username'] == username) & (df['Password'] == password)]
-        if not matched.empty:
-            log_login(username, True)
-            return True
-    
-    # Fallback to default credentials
-    if username in DEFAULT_CREDENTIALS and DEFAULT_CREDENTIALS[username] == password:
-        log_login(username, True)
-        return True
-
-    log_login(username, False)
-    return False
+    return DEFAULT_CREDENTIALS.get(username) == password
 
 # -----------------------
-# Page 1: Login
+# Pages
 # -----------------------
-if st.session_state.page == "login":
+def login_page():
     st.title("🔐 Login to Dental Report System")
     
     username = st.text_input("Username")
@@ -74,24 +41,27 @@ if st.session_state.page == "login":
     
     if st.button("Login"):
         if verify_login(username, password):
-            st.session_state.authenticated = True
-            st.session_state.username = username
-            st.session_state.page = "input"
+            st.session_state.update({
+                "authenticated": True,
+                "username": username,
+                "page": "input",
+                "name": "",
+                "age": 0,
+                "sex": "",
+                "date": datetime.date.today(),
+                "xray": None,
+            })
             st.rerun()
         else:
             st.error("Invalid username or password ❌")
 
-# -----------------------
-# Page 2: Patient Input
-# -----------------------
-elif st.session_state.page == "input" and st.session_state.authenticated:
+def input_page():
     st.title("🦷 Dental X-ray Report - Step 1")
     
     with st.sidebar:
         st.title("⚙️ Settings")
         if st.button("Logout"):
-            st.session_state.authenticated = False
-            st.session_state.page = "login"
+            st.session_state.update({"authenticated": False, "page": "login"})
             st.rerun()
     
     st.header("👤 Patient Information")
@@ -99,7 +69,7 @@ elif st.session_state.page == "input" and st.session_state.authenticated:
     st.session_state.age = st.number_input("Age", min_value=0, max_value=120, value=st.session_state.age)
     st.session_state.sex = st.selectbox(
         "Gender", ["Male", "Female", "Other"],
-        index=0 if not st.session_state.sex else ["Male", "Female", "Other"].index(st.session_state.sex)
+        index=["Male", "Female", "Other"].index(st.session_state.sex) if st.session_state.sex else 0
     )
     st.session_state.date = st.date_input("Examination Date", value=st.session_state.date)
     
@@ -112,17 +82,13 @@ elif st.session_state.page == "input" and st.session_state.authenticated:
             st.session_state.page = "summary"
             st.rerun()
 
-# -----------------------
-# Page 3: Summary
-# -----------------------
-elif st.session_state.page == "summary" and st.session_state.authenticated:
+def summary_page():
     st.title("📋 Dental X-ray Report Summary")
     
     with st.sidebar:
         st.title("⚙️ Settings")
         if st.button("Logout"):
-            st.session_state.authenticated = False
-            st.session_state.page = "login"
+            st.session_state.update({"authenticated": False, "page": "login"})
             st.rerun()
     
     st.subheader("Patient Details")
@@ -138,3 +104,15 @@ elif st.session_state.page == "summary" and st.session_state.authenticated:
     if st.button("⬅️ Back"):
         st.session_state.page = "input"
         st.rerun()
+
+# -----------------------
+# Main App Router
+# -----------------------
+init_session_state()
+
+if st.session_state.page == "login":
+    login_page()
+elif st.session_state.page == "input" and st.session_state.authenticated:
+    input_page()
+elif st.session_state.page == "summary" and st.session_state.authenticated:
+    summary_page()
