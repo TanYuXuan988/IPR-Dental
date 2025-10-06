@@ -1,26 +1,29 @@
-# ========================================
+# =============================
 # Imports
-# ========================================
+# =============================
 import os
 import datetime
 import streamlit as st
-from PIL import Image
 import numpy as np
-from ultralytics import YOLO
+import numpy as np
+import numpy as np
+import numpy as np
 import io
 import pandas as pd
+from ultralytics import YOLO
+from PIL import Image
 
-# ========================================
+# =============================
 # Config
-# ========================================
+# =============================
 DEFAULT_CREDENTIALS = {"UserIPR": "AdminIPR"}
 MODEL_PATH = "best.pt"
 ASPECT_MIN = 1.3
 ASPECT_MAX = 2.6
 
-# ========================================
+# =============================
 # Session State Setup
-# ========================================
+# =============================
 def init_session_state():
     defaults = {
         "page": "login",
@@ -38,15 +41,15 @@ def init_session_state():
         if k not in st.session_state:
             st.session_state[k] = v
 
-# ========================================
+# =============================
 # Authentication
-# ========================================
+# =============================
 def verify_login(username, password):
     return DEFAULT_CREDENTIALS.get(username) == password
 
-# ========================================
+# =============================
 # Load YOLO Model
-# ========================================
+# =============================
 def load_model(path):
     return YOLO(path)
 
@@ -56,14 +59,27 @@ except Exception as e:
     st.error(f"Failed to load YOLOv8s model at '{MODEL_PATH}': {e}")
     st.stop()
 
-# ========================================
+# =============================
 # Helper functions
-# ========================================
+# =============================
 def is_panoramic(image):
     """Check if the image is a panoramic dental X-ray based on aspect ratio."""
     width, height = image.size
     aspect_ratio = width / height if height != 0 else 0
     return ASPECT_MIN <= aspect_ratio <= ASPECT_MAX, aspect_ratio
+    
+def is_grayscale(image, threshold=10):
+    """
+    Returns True if the image is mostly grayscale.
+    threshold: maximum standard deviation in RGB channels to consider grayscale
+    """
+    img_np = np.array(image)
+    if len(img_np.shape) < 3 or img_np.shape[2] == 1:
+        return True  # single channel = grayscale
+    # Compute standard deviation across color channels
+    std = np.std(img_np[:, :, :3], axis=2)
+    mean_std = np.mean(std)
+    return mean_std < threshold
 
 def run_yolo(image):
     """Run YOLO inference and return annotated image + detections"""
@@ -81,9 +97,9 @@ def run_yolo(image):
             detections.append({"Object": name, "Confidence": f"{conf:.2f}"})
     return annotated, detections
 
-# ========================================
+# =============================
 # Pages
-# ========================================
+# =============================
 def login_page():
     st.title("🔐 Login to Dental Report System")
     username = st.text_input("Username")
@@ -125,24 +141,20 @@ def input_page():
     st.session_state.date = st.date_input("Examination Date", value=st.session_state.date)
     
     st.header("📸 Upload Panoramic Dental X-ray")
-    uploaded_file = st.file_uploader("Upload a panoramic X-ray (jpg/png)", type=["jpg", "jpeg", "png"])
-    if uploaded_file:
-        image = Image.open(uploaded_file).convert("RGB")
-        panoramic, aspect_ratio = is_panoramic(image)
-        st.write(f"📐 Aspect ratio: {aspect_ratio:.2f}")
-        if panoramic:
-            st.success("✅ Image looks like a panoramic dental X-ray.")
-            st.session_state.xray = image
-            st.image(image, caption="Uploaded Panoramic X-ray", use_column_width=True)
-            if st.button("Next ➡️"):
-                # Run YOLO and store results in session
-                annotated, detections = run_yolo(image)
-                st.session_state.annotated_image = annotated
-                st.session_state.detection_results = detections
-                st.session_state.page = "summary"
-                st.rerun()
-        else:
-            st.error("🚫 This does not appear to be a panoramic dental X-ray. Please upload a panoramic image.")
+    uploaded_file = st.file_uploader("Upload a panoramic X-ray", type=["jpg", "jpeg", "png"])
+if uploaded_file:
+    image = Image.open(uploaded_file).convert("RGB")
+    panoramic_ok, aspect_ratio, grayscale_ok = is_panoramic_xray(image)
+    st.write(f"📐 Aspect ratio: {aspect_ratio:.2f}")
+    st.write(f"🖤 Grayscale check: {'Passed' if grayscale_ok else 'Failed'}")
+    
+    if panoramic_ok:
+        st.success("✅ Image looks like a panoramic dental X-ray.")
+        st.session_state.xray = image
+        st.image(image, caption="Uploaded Panoramic X-ray", use_column_width=True)
+    else:
+        st.error("🚫 This does not appear to be a panoramic dental X-ray.")
+
 
 def summary_page():
     st.title("📋 Dental X-ray Report Summary")
@@ -179,9 +191,9 @@ def summary_page():
         st.session_state.page = "input"
         st.rerun()
 
-# ========================================
+# =============================
 # Main App Router
-# ========================================
+# =============================
 init_session_state()
 
 if st.session_state.page == "login":
