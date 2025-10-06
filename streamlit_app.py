@@ -107,7 +107,7 @@ def run_yolo(image, conf_thresh=0.5):
             cv2.rectangle(image_copy, (x1, y1), (x2, y2), color, 2)
             cv2.putText(image_copy, f"{name} {conf:.2f}", (x1, max(20, y1 - 10)),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
-            detections.append({"Object": name, "Confidence": f"{conf:.2f}", "Box": [x1, y1, x2, y2]})
+            detections.append({"Object": name, "Confidence": f"{conf:.2f}"})
 
     annotated = Image.fromarray(image_copy)
     return annotated, detections
