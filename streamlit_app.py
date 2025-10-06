@@ -125,7 +125,7 @@ def login_page():
             st.error("Invalid username or password ❌")
 
 def input_page():
-    st.title("🦷 Dental X-ray Report - Step 1")
+    st.title("🦷 Dental X-ray Report")
     
     with st.sidebar:
         st.title("⚙️ Settings")
