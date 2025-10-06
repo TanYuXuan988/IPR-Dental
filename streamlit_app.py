@@ -172,65 +172,56 @@ def summary_page():
 
     with st.sidebar:
         st.title("⚙️ Settings")
-        conf_threshold = st.selectbox(
-            "Confidence Threshold",
-            options=[0.5, 0.6, 0.7, 0.8, 0.9],
-            index=0,
-            help="Show detections above this confidence"
-        )
-
         if st.button("Logout"):
             st.session_state.update({"authenticated": False, "page": "login"})
             st.rerun()
 
-    # Patient info
     st.subheader("Patient Details")
     st.write(f"**Name:** {st.session_state.name}")
     st.write(f"**Age:** {st.session_state.age}")
     st.write(f"**Gender:** {st.session_state.sex}")
     st.write(f"**Examination Date:** {st.session_state.date.strftime('%B %d, %Y')}")
 
-    # Apply confidence filter
-    detections = st.session_state.detection_results or []
-    filtered = [d for d in detections if d["Confidence"] >= conf_threshold]
-
-    # Draw filtered detections on image
+    st.subheader("Uploaded X-ray Image")
     if st.session_state.xray:
-        image_np = np.array(st.session_state.xray)
-        image_copy = image_np.copy()
+        st.image(st.session_state.xray, use_column_width=True)
 
-        for det in filtered:
-            x1, y1, x2, y2 = map(int, det["Box"])
-            label = f"{det['Object']} {det['Confidence']:.2f}"
-            cv2.rectangle(image_copy, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(image_copy, label, (x1, max(20, y1 - 10)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+    st.subheader("YOLOv8s Detection Results")
+    if st.session_state.annotated_image and st.session_state.detection_results:
+        # confidence filter slider (below annotated image)
+        st.image(st.session_state.annotated_image, use_column_width=True)
+        threshold = st.slider(
+            "Confidence Threshold",
+            0.5, 0.9, 0.5, 0.1,
+            help="Filter detections below this confidence level."
+        )
 
-        annotated_filtered = Image.fromarray(image_copy)
-        st.image(annotated_filtered, caption=f"Detections ≥ {conf_threshold}", use_column_width=True)
+        # Filter detection results
+        df = pd.DataFrame(st.session_state.detection_results)
+        df["Confidence"] = df["Confidence"].astype(float)
+        filtered_df = df[df["Confidence"] >= threshold]
 
-        if filtered:
-            df = pd.DataFrame(
-                [{"Object": d["Object"], "Confidence": f"{d['Confidence']:.2f}"} for d in filtered]
-            )
-            st.table(df)
+        st.subheader(f"Filtered Results (≥ {threshold:.1f})")
+        if len(filtered_df) > 0:
+            st.table(filtered_df)
         else:
             st.info("No detections above this confidence threshold.")
 
-        # Download filtered annotated image
+        # Download button for annotated image
         buf = io.BytesIO()
-        annotated_filtered.save(buf, format="PNG")
+        st.session_state.annotated_image.save(buf, format="PNG")
         buf.seek(0)
         st.download_button(
-            "Download Filtered Annotated Image",
+            "📥 Download Annotated Image",
             data=buf,
-            file_name=f"detection_{conf_threshold}.png",
+            file_name="detection.png",
             mime="image/png"
         )
 
     if st.button("⬅️ Back"):
         st.session_state.page = "input"
         st.rerun()
+
 
 # =============================
 # page navigation
