@@ -166,16 +166,15 @@ def input_page():
                     st.session_state.detection_results = detections
                     st.session_state.page = "summary"
                     st.rerun()
-
+                    
         else:
             # error messages
-            if not panoramic_ok:
+            if not panoramic_ok and not grayscale_ok:
+                st.error("🚫 This image failed both checks — it doesn't appear panoramic **and** it’s not grayscale.")
+            elif not panoramic_ok:
                 st.error("⚠️ The aspect ratio is outside the expected range for a panoramic dental X-ray.")
             elif not grayscale_ok:
                 st.error("⚠️ This image does not appear to be grayscale like a typical panoramic X-ray.")
-            elif not panoramic_ok and not grayscale_ok:
-                st.error("🚫 This image failed both checks — it doesn't appear panoramic **and** it’s not grayscale.")
-
 
 def summary_page():
     st.title("📋 Dental X-ray Report Summary")
