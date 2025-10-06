@@ -174,7 +174,7 @@ def summary_page():
         st.title("⚙️ Settings")
         conf_threshold = st.selectbox(
             "Confidence Threshold",
-            options=[0, 0.5, 0.6, 0.7, 0.8, 0.9],
+            options=[0.0, 0.5, 0.6, 0.7, 0.8, 0.9],
             index=0,
             help="Show detections above this confidence"
         )
