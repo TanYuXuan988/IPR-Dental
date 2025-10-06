@@ -79,11 +79,11 @@ def is_grayscale(image, threshold=10):
 
 def is_panoramic_xray(image):
     """Check both aspect ratio and grayscale to decide if image is a panoramic X-ray."""
+    # aspect ratio check
     panoramic_ok, aspect_ratio = is_panoramic(image)
+    # grayscale check
     grayscale_ok = is_grayscale(image)
-    # Must satisfy both conditions
-    is_valid = panoramic_ok and grayscale_ok
-    return is_valid, aspect_ratio, grayscale_ok
+    return panoramic_ok, aspect_ratio, grayscale_ok
 
 def run_yolo(image):
     """Run YOLO inference and return annotated image + detections."""
@@ -147,16 +147,17 @@ def input_page():
 
     if uploaded_file:
         image = Image.open(uploaded_file).convert("RGB")
+        # NOTE: is_panoramic_xray now returns (panoramic_ok, aspect_ratio, grayscale_ok)
         panoramic_ok, aspect_ratio, grayscale_ok = is_panoramic_xray(image)
 
-        # show preview
+        # Always show preview
         st.image(image, caption="Uploaded Image Preview", use_column_width=True)
         st.write(f" **Aspect ratio:** {aspect_ratio:.2f}")
         st.write(f" **Grayscale check:** {'✅ Passed' if grayscale_ok else '❌ Failed'}")
 
-        # Determine validation results
+        # Decide what to show / allow
         if panoramic_ok and grayscale_ok:
-            st.success("✅ Image likely a valid panoramic dental X-ray.")
+            st.success("✅ Image is a valid panoramic dental X-ray.")
             st.session_state.xray = image
 
             if st.button("Run Detection"):
@@ -166,15 +167,14 @@ def input_page():
                     st.session_state.detection_results = detections
                     st.session_state.page = "summary"
                     st.rerun()
-                    
         else:
             # error messages
             if not panoramic_ok and not grayscale_ok:
-                st.error("🚫 This image failed both checks — it doesn't appear panoramic **and** it’s not grayscale.")
+                st.error("🚫 This image failed both checks — it is not panoramic and it’s not in grayscale.")
             elif not panoramic_ok:
                 st.error("⚠️ The aspect ratio is outside the expected range for a panoramic dental X-ray.")
             elif not grayscale_ok:
-                st.error("⚠️ This image does not appear to be grayscale like a typical panoramic X-ray.")
+                st.error("⚠️ This image is not grayscale like a typical panoramic X-ray.")
 
 def summary_page():
     st.title("📋 Dental X-ray Report Summary")
