@@ -19,6 +19,16 @@ MODEL_PATH = "best.pt"
 ASPECT_MIN = 1.3
 ASPECT_MAX = 2.6
 
+# Initialize session state variables
+if "annotated_image" not in st.session_state:
+    st.session_state.annotated_image = None
+if "detection_results" not in st.session_state:
+    st.session_state.detection_results = None
+if "xray" not in st.session_state:
+    st.session_state.xray = None
+if "confidence_threshold" not in st.session_state:
+    st.session_state.confidence_threshold = 0.5
+
 # =============================
 # initialize session
 # =============================
