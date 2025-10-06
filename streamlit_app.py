@@ -24,10 +24,10 @@ ASPECT_MAX = 2.6
 # =============================
 CLASS_COLORS = {
     "caries": (255, 0, 0),              # Red
-    "infection": (255, 165, 0),         # Orange
+    "infection": (255, 255, 0),         # Orange
     "impacted": (0, 0, 255),            # Blue
     "fractured": (255, 255, 0),         # Yellow
-    "broken_down_crown_root": (128, 0, 128),  # Purple
+    "broken_down_crown_root": (255, 0, 255),  # Purple
     "healthy": (0, 255, 0),             # Green
 }
 
@@ -145,8 +145,8 @@ def input_page():
         st.write("Confidence Threshold")
         st.session_state.confidence_threshold = st.selectbox(
             "Select minimum detection confidence",
-            [0.5, 0.6, 0.7, 0.8, 0.9],
-            index=[0.5, 0.6, 0.7, 0.8, 0.9].index(st.session_state.confidence_threshold)
+            [0.0, 0.5, 0.6, 0.7, 0.8, 0.9],
+            index=[0.0, 0.5, 0.6, 0.7, 0.8, 0.9].index(st.session_state.confidence_threshold)
         )
         if st.button("Logout"):
             st.session_state.update({"authenticated": False, "page": "login"})
@@ -201,8 +201,8 @@ def summary_page():
         st.write("Confidence Threshold")
         st.session_state.confidence_threshold = st.selectbox(
             "Select minimum detection confidence",
-            [0.5, 0.6, 0.7, 0.8, 0.9],
-            index=[0.5, 0.6, 0.7, 0.8, 0.9].index(st.session_state.confidence_threshold)
+            [0.0, 0.5, 0.6, 0.7, 0.8, 0.9],
+            index=[0.0, 0.5, 0.6, 0.7, 0.8, 0.9].index(st.session_state.confidence_threshold)
         )
         if st.button("Logout"):
             st.session_state.update({"authenticated": False, "page": "login"})
