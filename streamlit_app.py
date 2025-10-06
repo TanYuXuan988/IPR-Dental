@@ -149,11 +149,13 @@ def input_page():
         image = Image.open(uploaded_file).convert("RGB")
         panoramic_ok, aspect_ratio, grayscale_ok = is_panoramic_xray(image)
 
+        # show preview
         st.image(image, caption="Uploaded Image Preview", use_column_width=True)
-        st.write(f"📐 **Aspect ratio:** {aspect_ratio:.2f}")
-        st.write(f"🖤 **Grayscale check:** {'✅ Passed' if grayscale_ok else '❌ Failed'}")
+        st.write(f" **Aspect ratio:** {aspect_ratio:.2f}")
+        st.write(f" **Grayscale check:** {'✅ Passed' if grayscale_ok else '❌ Failed'}")
 
-        if panoramic_ok:
+        # Determine validation results
+        if panoramic_ok and grayscale_ok:
             st.success("✅ Image likely a valid panoramic dental X-ray.")
             st.session_state.xray = image
 
@@ -164,8 +166,15 @@ def input_page():
                     st.session_state.detection_results = detections
                     st.session_state.page = "summary"
                     st.rerun()
+
         else:
-            st.error("🚫 This image does not appear to be a panoramic dental X-ray (aspect ratio or grayscale check failed).")
+            # error messages
+            if not panoramic_ok and not grayscale_ok:
+                st.error("🚫 This image failed both checks — it doesn't appear panoramic **and** it’s not grayscale.")
+            elif not panoramic_ok:
+                st.error("⚠️ The aspect ratio is outside the expected range for a panoramic dental X-ray.")
+            elif not grayscale_ok:
+                st.error("⚠️ This image does not appear to be grayscale like a typical panoramic X-ray.")
 
 
 def summary_page():
