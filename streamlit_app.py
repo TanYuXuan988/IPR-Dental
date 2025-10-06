@@ -7,9 +7,9 @@ import streamlit as st
 import numpy as np
 import io
 import pandas as pd
+import cv2
 from ultralytics import YOLO
 from PIL import Image
-import cv2
 
 # =============================
 # config
@@ -23,12 +23,12 @@ ASPECT_MAX = 2.6
 # class colors
 # =============================
 CLASS_COLORS = {
-    "caries": (255, 0, 0),              # Red
-    "infection": (255, 255, 0),         # Orange
-    "impacted": (0, 0, 255),            # Blue
-    "fractured": (255, 255, 0),         # Yellow
-    "broken_down_crown_root": (255, 0, 255),  # Purple
-    "healthy": (0, 255, 0),             # Green
+    "caries": (255, 0, 0),                      # Red
+    "infection": (255, 255, 0),                 # Orange
+    "impacted": (0, 0, 255),                    # Blue
+    "fractured": (255, 255, 0),                 # Yellow
+    "broken_down_crown_root": (255, 0, 255),    # Purple
+    "healthy": (0, 255, 0),                     # Green
 }
 
 # =============================
