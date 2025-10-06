@@ -135,7 +135,7 @@ def input_page():
     
     st.header("👤 Patient Information")
     st.session_state.name = st.text_input("Name", value=st.session_state.name)
-    st.session_state.age = st.number_input("Age", min_value=0, max_value=100, value=st.session_state.age)
+    st.session_state.age = st.number_input("Age", min_value=0, max_value=120, value=st.session_state.age)
     st.session_state.sex = st.selectbox(
         "Gender", ["Male", "Female", "Other"],
         index=["Male", "Female", "Other"].index(st.session_state.sex) if st.session_state.sex else 0
@@ -149,14 +149,14 @@ def input_page():
         image = Image.open(uploaded_file).convert("RGB")
         panoramic_ok, aspect_ratio, grayscale_ok = is_panoramic_xray(image)
 
-        st.write(f"📐 Aspect ratio: {aspect_ratio:.2f}")
-        st.write(f"🖤 Grayscale check: {'✅ Passed' if grayscale_ok else '❌ Failed'}")
+        st.image(image, caption="Uploaded Image Preview", use_column_width=True)
+        st.write(f"📐 **Aspect ratio:** {aspect_ratio:.2f}")
+        st.write(f"🖤 **Grayscale check:** {'✅ Passed' if grayscale_ok else '❌ Failed'}")
 
         if panoramic_ok:
             st.success("✅ Image likely a valid panoramic dental X-ray.")
             st.session_state.xray = image
-            st.image(image, caption="Uploaded Panoramic X-ray", use_column_width=True)
-            
+
             if st.button("Run Detection"):
                 with st.spinner("Running YOLOv8s detection..."):
                     annotated, detections = run_yolo(image)
@@ -166,6 +166,7 @@ def input_page():
                     st.rerun()
         else:
             st.error("🚫 This image does not appear to be a panoramic dental X-ray (aspect ratio or grayscale check failed).")
+
 
 def summary_page():
     st.title("📋 Dental X-ray Report Summary")
