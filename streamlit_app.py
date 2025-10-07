@@ -223,14 +223,14 @@ def summary_page():
     st.write(f"**Examination Date:** {date_val.strftime('%B %d, %Y')}")
 
     st.divider()
-    st.subheader("📸 Uploaded X-ray Image")
+    st.subheader("Uploaded X-ray Image")
     if st.session_state.xray:
         st.image(st.session_state.xray, use_column_width=True)
     else:
         st.warning("No image uploaded yet.")
 
     st.divider()
-    st.subheader("🤖 YOLOv8s Detection Results")
+    st.subheader("YOLOv8s Detection Results")
     if st.session_state.xray:
         annotated, detections = run_yolo(st.session_state.xray, st.session_state.confidence_threshold)
         st.session_state.annotated_image = annotated
