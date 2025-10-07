@@ -195,7 +195,7 @@ def input_page():
 def summary_page():
     st.title("📋 Dental X-ray Report Summary")
 
-    # Sidebar – only controls
+    # sidebar
     with st.sidebar:
         st.title("⚙️ Settings")
         confidence_options = [0.0, 0.5, 0.6, 0.7, 0.8, 0.9]
@@ -214,7 +214,7 @@ def summary_page():
             st.session_state.update({"authenticated": False, "page": "login"})
             st.rerun()
 
-    # Main content – report
+    # report
     st.subheader("👤 Patient Details")
     st.write(f"**Name:** {st.session_state.get('name', '')}")
     st.write(f"**Age:** {st.session_state.get('age', 0)}")
