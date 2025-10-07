@@ -177,13 +177,14 @@ def input_page():
             st.success("✅ Image is a valid panoramic dental X-ray.")
             st.session_state.xray = image
 
-            if st.button("Run Detection"):
-                with st.spinner("Running YOLOv8s detection..."):
-                    annotated, detections = run_yolo(image, st.session_state.confidence_threshold)
-                    st.session_state.annotated_image = annotated
-                    st.session_state.detection_results = detections
-                    st.session_state.page = "summary"
-                    st.rerun()
+        if st.button("Run Detection"):
+            with st.spinner("Running YOLOv8s detection..."):
+                annotated, detections = run_yolo(image, st.session_state.confidence_threshold)
+                st.session_state.annotated_image = annotated
+                st.session_state.detection_results = detections
+                st.session_state.page = "summary"
+                st.rerun()
+
         else:
             # error messages
             if not panoramic_ok and not grayscale_ok:
@@ -196,17 +197,23 @@ def input_page():
 def summary_page():
     st.title("📋 Dental X-ray Report Summary")
 
-    with st.sidebar:
-        st.title("⚙️ Settings")
-        st.write("Confidence Threshold")
-        st.session_state.confidence_threshold = st.selectbox(
-            "Select minimum detection confidence",
-            [0.0, 0.5, 0.6, 0.7, 0.8, 0.9],
-            index=[0.0, 0.5, 0.6, 0.7, 0.8, 0.9].index(st.session_state.confidence_threshold)
-        )
-        if st.button("Logout"):
-            st.session_state.update({"authenticated": False, "page": "login"})
-            st.rerun()
+with st.sidebar:
+    st.title("⚙️ Settings")
+
+    # Confidence filter dropdown (fixed lag issue)
+    confidence_options = [0.0, 0.5, 0.6, 0.7, 0.8, 0.9]
+    previous_conf = st.session_state.get("prev_confidence_threshold", 0.5)
+    selected_conf = st.selectbox("Confidence threshold", confidence_options, index=confidence_options.index(previous_conf))
+
+    # If confidence changed, update immediately
+    if selected_conf != previous_conf:
+        st.session_state.prev_confidence_threshold = selected_conf
+        st.session_state.confidence_threshold = selected_conf
+        st.rerun()
+
+    if st.button("Logout"):
+        st.session_state.update({"authenticated": False, "page": "login"})
+        st.rerun()
 
     st.subheader("Patient Details")
     st.write(f"**Name:** {st.session_state.name}")
@@ -219,15 +226,15 @@ def summary_page():
         st.image(st.session_state.xray, use_column_width=True)
 
     st.subheader("YOLOv8s Detection Results")
-    if st.session_state.annotated_image:
         annotated, detections = run_yolo(st.session_state.xray, st.session_state.confidence_threshold)
         st.session_state.annotated_image = annotated
         st.session_state.detection_results = detections
+    
+    st.image(st.session_state.annotated_image, use_column_width=True)
+    if st.session_state.detection_results:
+        df = pd.DataFrame(st.session_state.detection_results)
+        st.table(df)
 
-        st.image(st.session_state.annotated_image, use_column_width=True)
-        if st.session_state.detection_results:
-            df = pd.DataFrame(st.session_state.detection_results)
-            st.table(df)
         buf = io.BytesIO()
         st.session_state.annotated_image.save(buf, format="PNG")
         buf.seek(0)
