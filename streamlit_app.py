@@ -224,21 +224,23 @@ with st.sidebar:
     st.subheader("Uploaded X-ray Image")
     if st.session_state.xray:
         st.image(st.session_state.xray, use_column_width=True)
-
+    
     st.subheader("YOLOv8s Detection Results")
+    if st.session_state.annotated_image:
+        # 🔹 Run YOLO again with the current confidence threshold
         annotated, detections = run_yolo(st.session_state.xray, st.session_state.confidence_threshold)
         st.session_state.annotated_image = annotated
         st.session_state.detection_results = detections
+        st.image(st.session_state.annotated_image, use_column_width=True)
+        if st.session_state.detection_results:
+            df = pd.DataFrame(st.session_state.detection_results)
+            st.table(df)
     
-    st.image(st.session_state.annotated_image, use_column_width=True)
-    if st.session_state.detection_results:
-        df = pd.DataFrame(st.session_state.detection_results)
-        st.table(df)
-
         buf = io.BytesIO()
         st.session_state.annotated_image.save(buf, format="PNG")
         buf.seek(0)
         st.download_button("Download Annotated Image", data=buf, file_name="detection.png", mime="image/png")
+
 
     if st.button("⬅️ Back"):
         st.session_state.page = "input"
