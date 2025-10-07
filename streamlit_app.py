@@ -46,8 +46,8 @@ def init_session_state():
         "xray": None,
         "detection_results": None,
         "annotated_image": None,
-        "confidence_threshold": 0.5,
-        "prev_confidence_threshold": 0.5,
+        "confidence_threshold": 0.0,
+        "prev_confidence_threshold": 0.0,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -93,7 +93,7 @@ def is_panoramic_xray(image):
     grayscale_ok = is_grayscale(image)
     return panoramic_ok, aspect_ratio, grayscale_ok
 
-def run_yolo(image, conf_thresh=0.5):
+def run_yolo(image, conf_thresh=0.0):
     results = model(image)
     detections = []
     boxes = getattr(results[0], "boxes", None)
@@ -210,7 +210,7 @@ def summary_page():
         st.title("⚙️ Settings")
 
         confidence_options = [0.0, 0.5, 0.6, 0.7, 0.8, 0.9]
-        previous_conf = st.session_state.get("confidence_threshold", 0.5)
+        previous_conf = st.session_state.get("confidence_threshold", 0.0)
         selected_conf = st.selectbox("Confidence threshold", confidence_options,
                                      index=confidence_options.index(previous_conf))
         if selected_conf != previous_conf:
