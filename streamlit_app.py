@@ -202,7 +202,7 @@ def input_page():
     run_clicked = st.button(
         "▶️ Run Detection",
         disabled=run_disabled,
-        help=disabled_reason if run_disabled else "Start YOLOv8s detection on this X-ray."
+        help=disabled_reason if run_disabled else "Start YOLOv8s detection."
     )
 
     if run_clicked and image is not None and not run_disabled:
