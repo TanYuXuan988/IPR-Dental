@@ -266,35 +266,35 @@ def summary_page():
         if st.session_state.detection_results:
             df = pd.DataFrame(st.session_state.detection_results)
             st.table(df)
-
-        buf = io.BytesIO()
-        st.session_state.annotated_image.save(buf, format="PNG")
-        buf.seek(0)
-        st.download_button(
-            "💾 Download Annotated Image",
-            data=buf,
-            file_name="detection.png",
-            mime="image/png",
-            use_container_width=True,
-            )
     
-        # confidence histogram
-        import matplotlib.pyplot as plt
-        st.subheader("📊 Confidence Level Distribution")
-
-        df["Confidence"] = df["Confidence"].astype(float)
-
-        fig, ax = plt.subplots()
-        ax.hist(df["Confidence"], bins=10, range=(0, 1), edgecolor="black", color="skyblue")
-        ax.set_xlabel("Confidence Score")
-        ax.set_ylabel("Number of Detections")
-        ax.set_title("Distribution of Detection Confidence Scores")
-        ax.grid(alpha=0.3)
-
-        st.pyplot(fig)
-
-        buf = io.BytesIO()
-        st.session_state.annotated_image.save(buf, format="PNG")
+            buf = io.BytesIO()
+            st.session_state.annotated_image.save(buf, format="PNG")
+            buf.seek(0)
+            st.download_button(
+                "💾 Download Annotated Image",
+                data=buf,
+                file_name="detection.png",
+                mime="image/png",
+                use_container_width=True,
+                )
+        
+            # confidence histogram
+            import matplotlib.pyplot as plt
+            st.subheader("📊 Confidence Level Distribution")
+    
+            df["Confidence"] = df["Confidence"].astype(float)
+    
+            fig, ax = plt.subplots()
+            ax.hist(df["Confidence"], bins=10, range=(0, 1), edgecolor="black", color="skyblue")
+            ax.set_xlabel("Confidence Score")
+            ax.set_ylabel("Number of Detections")
+            ax.set_title("Distribution of Detection Confidence Scores")
+            ax.grid(alpha=0.3)
+    
+            st.pyplot(fig)
+    
+            buf = io.BytesIO()
+            st.session_state.annotated_image.save(buf, format="PNG")
         
         else:
             st.info("No detections above the current confidence threshold.")
