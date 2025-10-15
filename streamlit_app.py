@@ -246,7 +246,18 @@ def summary_page():
     date_val = st.session_state.get("date", datetime.date.today())
     st.write(f"**Examination Date:** {date_val.strftime('%B %d, %Y')}")
 
+    buf = io.BytesIO()
+    st.session_state.annotated_image.save(buf, format="PNG")
+    buf.seek(0)
+    st.download_button(
+        "💾 Download Annotated Image",
+        data=buf,
+        file_name="detection.png",
+        mime="image/png",
+        use_container_width=True,
+    
     st.divider()
+    
     st.subheader("Uploaded X-ray Image")
     if st.session_state.xray:
         st.image(st.session_state.xray, use_column_width=True)
@@ -283,12 +294,6 @@ def summary_page():
     
             buf = io.BytesIO()
             st.session_state.annotated_image.save(buf, format="PNG")
-            buf.seek(0)
-            st.download_button(
-                "Download Annotated Image",
-                data=buf,
-                file_name="detection.png",
-                mime="image/png",
             )
         else:
             st.info("No detections above the current confidence threshold.")
