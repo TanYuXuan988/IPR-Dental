@@ -263,6 +263,12 @@ def summary_page():
         if st.session_state.detection_results:
             df = pd.DataFrame(st.session_state.detection_results)
             st.table(df)
+
+            # confidence histogram
+            st.subheader("📊 Confidence Level Distribution")
+            df["Confidence"] = df["Confidence"].astype(float)
+            st.hist_chart(df["Confidence"])
+            
             buf = io.BytesIO()
             st.session_state.annotated_image.save(buf, format="PNG")
             buf.seek(0)
@@ -281,6 +287,7 @@ def summary_page():
     if st.button("⬅️ Back"):
         st.session_state.page = "input"
         st.rerun()
+
 
 # =============================
 # page navigation
