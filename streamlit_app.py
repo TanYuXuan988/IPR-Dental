@@ -8,6 +8,7 @@ import numpy as np
 import io
 import pandas as pd
 import cv2
+import matplotlib.pyplot as plt
 from ultralytics import YOLO
 from PIL import Image
 
@@ -264,10 +265,18 @@ def summary_page():
             df = pd.DataFrame(st.session_state.detection_results)
             st.table(df)
 
-            # confidence histogram
-            st.subheader("📊 Confidence Level Distribution")
-            df["Confidence"] = df["Confidence"].astype(float)
-            st.hist_chart(df["Confidence"])
+        # confidence histogram
+        st.subheader("📊 Confidence Level Distribution")
+        df["Confidence"] = df["Confidence"].astype(float)
+        
+        fig, ax = plt.subplots()
+        ax.hist(df["Confidence"], bins=10, range=(0, 1), edgecolor="black", color="skyblue")
+        ax.set_xlabel("Confidence Score")
+        ax.set_ylabel("Number of Detections")
+        ax.set_title("Distribution of Detection Confidence Scores")
+        ax.grid(alpha=0.3)
+        
+        st.pyplot(fig)
             
             buf = io.BytesIO()
             st.session_state.annotated_image.save(buf, format="PNG")
