@@ -254,30 +254,33 @@ def summary_page():
         st.warning("No image uploaded yet.")
 
     st.divider()
+    
     st.subheader("YOLOv8s Detection Results")
     if st.session_state.xray:
         annotated, detections = run_yolo(st.session_state.xray, st.session_state.confidence_threshold)
         st.session_state.annotated_image = annotated
         st.session_state.detection_results = detections
         st.image(st.session_state.annotated_image, use_column_width=True)
-
+    
         if st.session_state.detection_results:
             df = pd.DataFrame(st.session_state.detection_results)
             st.table(df)
-
-        # confidence histogram
-        st.subheader("📊 Confidence Level Distribution")
-        df["Confidence"] = df["Confidence"].astype(float)
-        
-        fig, ax = plt.subplots()
-        ax.hist(df["Confidence"], bins=10, range=(0, 1), edgecolor="black", color="skyblue")
-        ax.set_xlabel("Confidence Score")
-        ax.set_ylabel("Number of Detections")
-        ax.set_title("Distribution of Detection Confidence Scores")
-        ax.grid(alpha=0.3)
-        
-        st.pyplot(fig)
-            
+    
+            # confidence histogram
+            import matplotlib.pyplot as plt
+            st.subheader("📊 Confidence Level Distribution")
+    
+            df["Confidence"] = df["Confidence"].astype(float)
+    
+            fig, ax = plt.subplots()
+            ax.hist(df["Confidence"], bins=10, range=(0, 1), edgecolor="black", color="skyblue")
+            ax.set_xlabel("Confidence Score")
+            ax.set_ylabel("Number of Detections")
+            ax.set_title("Distribution of Detection Confidence Scores")
+            ax.grid(alpha=0.3)
+    
+            st.pyplot(fig)
+    
             buf = io.BytesIO()
             st.session_state.annotated_image.save(buf, format="PNG")
             buf.seek(0)
