@@ -255,6 +255,7 @@ def summary_page():
         file_name="detection.png",
         mime="image/png",
         use_container_width=True,
+    )
     
     st.divider()
     
