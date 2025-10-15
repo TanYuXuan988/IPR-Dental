@@ -262,21 +262,21 @@ def summary_page():
         st.session_state.annotated_image = annotated
         st.session_state.detection_results = detections
         st.image(st.session_state.annotated_image, use_column_width=True)
+
+        buf = io.BytesIO()
+        st.session_state.annotated_image.save(buf, format="PNG")
+        buf.seek(0)
+        st.download_button(
+            label="💾 Download Annotated Image",
+            data=buf,
+            file_name="detection.png",
+            mime="image/png",
+            use_container_width=True,
+            )
     
         if st.session_state.detection_results:
             df = pd.DataFrame(st.session_state.detection_results)
             st.table(df)
-    
-            buf = io.BytesIO()
-            st.session_state.annotated_image.save(buf, format="PNG")
-            buf.seek(0)
-            st.download_button(
-                label="💾 Download Annotated Image",
-                data=buf,
-                file_name="detection.png",
-                mime="image/png",
-                use_container_width=True,
-                )
         
             # confidence histogram
             import matplotlib.pyplot as plt
