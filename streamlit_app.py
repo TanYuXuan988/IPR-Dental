@@ -295,7 +295,7 @@ def summary_page():
     
             buf = io.BytesIO()
             st.session_state.annotated_image.save(buf, format="PNG")
-            )
+            
         else:
             st.info("No detections above the current confidence threshold.")
     else:
