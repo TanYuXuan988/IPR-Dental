@@ -271,7 +271,7 @@ def summary_page():
             st.session_state.annotated_image.save(buf, format="PNG")
             buf.seek(0)
             st.download_button(
-                "💾 Download Annotated Image",
+                label="💾 Download Annotated Image",
                 data=buf,
                 file_name="detection.png",
                 mime="image/png",
@@ -292,9 +292,6 @@ def summary_page():
             ax.grid(alpha=0.3)
     
             st.pyplot(fig)
-    
-            buf = io.BytesIO()
-            st.session_state.annotated_image.save(buf, format="PNG")
         
         else:
             st.info("No detections above the current confidence threshold.")
