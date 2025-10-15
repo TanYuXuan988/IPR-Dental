@@ -245,17 +245,6 @@ def summary_page():
     st.write(f"**Gender:** {st.session_state.get('sex', '')}")
     date_val = st.session_state.get("date", datetime.date.today())
     st.write(f"**Examination Date:** {date_val.strftime('%B %d, %Y')}")
-
-    buf = io.BytesIO()
-    st.session_state.annotated_image.save(buf, format="PNG")
-    buf.seek(0)
-    st.download_button(
-        "💾 Download Annotated Image",
-        data=buf,
-        file_name="detection.png",
-        mime="image/png",
-        use_container_width=True,
-    )
     
     st.divider()
     
@@ -277,6 +266,17 @@ def summary_page():
         if st.session_state.detection_results:
             df = pd.DataFrame(st.session_state.detection_results)
             st.table(df)
+
+        buf = io.BytesIO()
+        st.session_state.annotated_image.save(buf, format="PNG")
+        buf.seek(0)
+        st.download_button(
+            "💾 Download Annotated Image",
+            data=buf,
+            file_name="detection.png",
+            mime="image/png",
+            use_container_width=True,
+            )
     
             # confidence histogram
             import matplotlib.pyplot as plt
